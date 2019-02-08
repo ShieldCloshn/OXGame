@@ -1,0 +1,196 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+@{
+    Layout = null;
+}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+<script>
+    function createGameFiled(result) {
+        $("#grid").empty();
+        result.forEach(item => {
+            $(`#grid`)
+                .append(
+                    `<tr>
+                      <td><div class="text-center"><button type="button" class="btn btn-default btn-lg" id="${item.FirstColumn}" value =${item.FirstColumn}></button></div></td>
+                      <td><div class="text-center"><button type="button" class="btn btn-default btn-lg" id="${item.SecondColumn}" value =${item.SecondColumn}></button></div></td>
+                      <td><div class="text-center"><button type="button" class="btn btn-default btn-lg" id="${item.ThirdColumn}" value =${item.ThirdColumn}></button></div></td>
+                </tr>`);
+        });
+
+    }
+
+    function getTablesFiled() {
+        $.get(`/Home/GetGameField`)
+            .done(result => createGameFiled(result))
+            .fail(result => console.log(result))
+    }
+
+    function playerMove(id) {
+        var FirstRow = [$("#1").val(), $("#2").val(), $("#3").val()];
+        var SecondRow = [$(`#4`).val(), $(`#5`).val(), $(`#6`).val()];
+        var ThirdRow = [$(`#7`).val(), $(`#8`).val(), $(`#9`).val()];
+        var CellId = id;
+        var param = {
+            FirstRow,
+            SecondRow,
+            ThirdRow,
+            CellId
+        }
+
+        $.get(`/Home/GetPlayerMove?param=${JSON.stringify(param)}`)
+            .done((item) => {
+                if (item.CellId) {
+                    console.log(item);
+                    $(`#${item.CellId}`).prop('disabled', true);
+                    $(`#${item.CellId}`).val("O");
+                    $(`#${item.CellId}`).append
+                        (
+                        `<i class='far fa-circle' style ="color:red"></i>`
+                        );
+                }
+               if (item.Message){
+                   alert(item.Message);
+                   getGamesHistory();
+               }
+            })
+          .fail(result => console.log(result));
+    }
+
+    function getGamesHistory() {
+        var Id = $("#idinput").val();
+        var GameResult = $("#resultinput").val();
+        var param = {
+            Id,
+            GameResult
+        }
+        $.get(`/Home/GetGamesHistory?param=${JSON.stringify(param)}`)
+            .done(result => {
+                applyGamesData(result);
+            })
+            .fail(result => console.log(result)); 
+    }
+
+    function applyGamesData(result) {
+        $("#gamehistorytablegrind").empty();
+        console.log(result);
+        result.forEach(item => {
+            $(`#gamehistorytablegrind`)
+                .append(
+                    `<tr>
+                      <td>${item.GameId}</td>
+                      <td>${item.Move}</td>
+                      <td>${item.Player}</td>
+                      <td>${item.Gameresult}</td>
+                </tr>`);
+        })
+    }
+
+    function getGamesData() {
+        $.get(`/Home/GetGamesData`)
+            .done(result => {
+                result.forEach(item => {
+                    $('#idinput').append(` <option value="${item.Id}">${item.Id}</option>`)
+                });
+            })
+            .fail(result => console.log(result));
+
+    }
+  
+    $(() => {
+        getTablesFiled();
+        getGamesData();
+        getGamesHistory();
+        $("#grid").on('click', 'button', function () {
+            if (this.value != 0 || this.value != 1) {
+                $(this).prop('disabled', true);
+                $(this).val("X");
+                console.log(this.id);
+                playerMove(this.id);
+                $(this).append
+                    (
+                    `<i class='fas fa-times' style="color:blue"></i>`
+                );
+
+            }
+        });
+    })
+</script>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel='stylesheet' href='https://use.fontawesome.com/releases/v5.7.0/css/all.css' integrity='sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ' crossorigin='anonymous'>
+    <title>Крестики Нолики</title>
+</head>
+<body>
+    <div>
+        <h3 align="center"> Крестики Нолики </h3>
+        <div class="container h-100">
+            <div class="row h-100 justify-content-center align-items-center">
+                <form class="col-2">
+                    <div class="form-group">
+                        <table class="table table-bordered table-striped" id="gametable">
+                            <tbody id="grid"></tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="text-center"><button type="button" class="btn btn-default btn-lg" id="newgamebutton" onclick="getTablesFiled()">Начать новую игру</button></div>
+    <br>
+    <div class="container h-100">
+        <div class="row h-100 justify-content-center align-items-center">
+            <form class="col-2">
+                <div class="form-group">
+                    <table class="table table-bordered table-striped" id="gamehistorytable">
+                        <thead>
+                            <tr>
+                                <th>Номер игры</th>
+                                <th>Ход</th>
+                                <th>Игрок</th>
+                                <th>Победитель</th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div class="text-center">
+                                        <select class="form-control"  id="idinput">
+                                            <option value="0"> </option>
+                                        </select>
+                                        </div>
+                                </th>
+                                <th>
+                                    <div class="input-group m-1">
+                                    </div>
+                                </th>
+                                <th>
+                                </th>
+                                <th>
+                                    <select class="form-control" id="resultinput">
+                                        <option> </option>
+                                        <option value="Победил игрок">Игрок</option>
+                                        <option value="Игрок проиграл">Компьютер</option>
+                                        <option value="Ничья">Ничья</option>
+                                    </select>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th colspan="4">
+                                    <button type="button" class="btn btn-default btn-sm" id="newgamebutton" onclick="getGamesHistory()">Применить фильтр</button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="gamehistorytablegrind"></tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
